@@ -85,7 +85,7 @@
 <script>
   // 🔥 IMPORTANT:
   // यहां अपना Google Apps Script WebApp URL डालें:
-  const SHEET_WEBAPP_URL = "PASTE_YOUR_WEBAPP_URL_HERE";
+  const SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxd5h4gD-Ur3WiYwUGlo4S7wQlP1XgfCyRlvGNsm4m1QcNleYg9FYLcYHodT9McJm7d/exec";
 
   let mapUrl = "";
   let collected = {};
@@ -259,7 +259,7 @@
     };
 
     // 3) Save to sheet
-    if(!SHEET_WEBAPP_URL || SHEET_WEBAPP_URL.includes("PASTE_YOUR_WEBAPP_URL_HERE")){
+    if(!SHEET_WEBAPP_URL || SHEET_WEBAPP_URL.includes("https://script.google.com/macros/s/AKfycbxd5h4gD-Ur3WiYwUGlo4S7wQlP1XgfCyRlvGNsm4m1QcNleYg9FYLcYHodT9McJm7d/exec")){
       setUI("bad", "❌ Error", "WebApp URL set नहीं है।", "HTML code में SHEET_WEBAPP_URL paste करें।");
       showRetry();
       return;
