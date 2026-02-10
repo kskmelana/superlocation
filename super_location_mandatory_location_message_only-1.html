@@ -85,7 +85,7 @@
 <script>
   // 🔥 IMPORTANT:
   // यहां अपना Google Apps Script WebApp URL डालें:
-  const SHEET_WEBAPP_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiQ6w_-p80qCGblfJBy4CP7Iew-YhgAQ75bUBdBxuse2qtd_u1v6kZcqBbpE1ff2NfwuQIqdf6LbyG11tjQA0--W1Nr_W46SlPIf8j5HnUu2GSw74CiLq76moss2-NaJJRfrcJc0W-oIzzgC13H5KHFsLkHzugJV3x3nK71mimSEQHiSVcU9Sj3JUsFD9_pFpilENjZF_L8S2JmKvJDEmBFZPll1zLkrOD0K_8gI79seyBGB8K7Wjmksj5meMNl2WQCScCuZd3kGpQ_aQzozE60pIyIKw&lib=MtJRgQT0Jv04qV2t3hizbrcZ3ibJN0JiI";
+  const SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxd5h4gD-Ur3WiYwUGlo4S7wQlP1XgfCyRlvGNsm4m1QcNleYg9FYLcYHodT9McJm7d/exec";
 
   let mapUrl = "";
   let collected = {};
@@ -259,7 +259,7 @@
     };
 
     // 3) Save to sheet
-    if(!SHEET_WEBAPP_URL || SHEET_WEBAPP_URL.includes("https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiQ6w_-p80qCGblfJBy4CP7Iew-YhgAQ75bUBdBxuse2qtd_u1v6kZcqBbpE1ff2NfwuQIqdf6LbyG11tjQA0--W1Nr_W46SlPIf8j5HnUu2GSw74CiLq76moss2-NaJJRfrcJc0W-oIzzgC13H5KHFsLkHzugJV3x3nK71mimSEQHiSVcU9Sj3JUsFD9_pFpilENjZF_L8S2JmKvJDEmBFZPll1zLkrOD0K_8gI79seyBGB8K7Wjmksj5meMNl2WQCScCuZd3kGpQ_aQzozE60pIyIKw&lib=MtJRgQT0Jv04qV2t3hizbrcZ3ibJN0JiI")){
+    if(!SHEET_WEBAPP_URL || SHEET_WEBAPP_URL.includes("https://script.google.com/macros/s/AKfycbxd5h4gD-Ur3WiYwUGlo4S7wQlP1XgfCyRlvGNsm4m1QcNleYg9FYLcYHodT9McJm7d/exec")){
       setUI("bad", "❌ Error", "WebApp URL set नहीं है।", "HTML code में SHEET_WEBAPP_URL paste करें।");
       showRetry();
       return;
